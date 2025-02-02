@@ -81,11 +81,15 @@ static void _USB_Read_Data()
 
     Endpoint_SelectEndpoint( CDC_RX_EPADDR );
 
-    if( Endpoint_BytesInEndpoint() > rb_length_B(&_usb_receive_buffer))
-        rb_push_back_B( &_usb_receive_buffer, Endpoint_Read_8());
-    else
+    if (!Endpoint_IsOUTReceived()) {return;}
+
+    if (!Endpoint_IsReadWriteAllowed()) {
         Endpoint_ClearOUT();
-   
+        return;
+    }
+    //if( Endpoint_BytesInEndpoint() > rb_length_B(&_usb_receive_buffer))
+    rb_push_back_B( &_usb_receive_buffer, Endpoint_Read_8());
+    if (!Endpoint_BytesInEndpoint()) {Endpoint_ClearOUT();}
 }
 
 /**
@@ -103,11 +107,23 @@ static void _USB_Write_Data()
     if( USB_DeviceState != DEVICE_STATE_Configured )
         return;
     Endpoint_SelectEndpoint( CDC_TX_EPADDR );
-    if(rb_length_B(&_usb_send_buffer) != 0 && Endpoint_IsINReady()){
-    // if(rb_length_B(&_usb_send_buffer)){
-          Endpoint_Write_8(rb_pop_front_B( &_usb_send_buffer)); 
-    }else
+
+    if(!Endpoint_IsINReady()) {return;}
+
+    // if (!Endpoint_IsReadWriteAllowed()) {
+    //     Endpoint_ClearIN();
+    //     return;
+    // }
+
+    while(rb_length_B(&_usb_send_buffer) != 0){
+        if( Endpoint_BytesInEndpoint() == CDC_TXRX_EPSIZE ) { Endpoint_ClearIN();}
+        
+        Endpoint_Write_8(rb_pop_front_B( &_usb_send_buffer)); 
+    }
+    if( Endpoint_BytesInEndpoint() != 0 ) {
         Endpoint_ClearIN();
+        return;
+    }
     
 
 }
@@ -266,9 +282,6 @@ void USB_Send_Msg( char* format, char cmd, void* p_data, uint8_t data_len )
     USB_Send_Str(format);
     USB_Send_Byte(cmd);
     USB_Send_Data(p_data, data_len); //Same here
-
-
-
 }
 
 /**
