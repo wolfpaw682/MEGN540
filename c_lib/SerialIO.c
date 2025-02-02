@@ -124,8 +124,6 @@ static void _USB_Write_Data()
         Endpoint_ClearIN();
         return;
     }
-    
-
 }
 
 void Task_USB_Upkeep()
@@ -305,7 +303,7 @@ uint8_t USB_Msg_Peek()
     // *** MEGN540  ***
     // YOUR CODE HERE
     // This should only interface with the ring buffers and use your ring buffer functions.
-    return rb_get_B( &_usb_receive_buffer, _usb_receive_buffer.start_index );
+    return rb_get_B( &_usb_receive_buffer, 0);
 }
 
 /**
